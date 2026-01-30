@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 Analizador de Emociones con IA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --gradient: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(5deg); }
+            66% { transform: translate(-20px, 20px) rotate(-5deg); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Main card */
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Input section */
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #e5e7eb;
+            font-size: 1rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+        }
+
+        textarea::placeholder {
+            color: #6b7280;
+        }
+
+        /* Buttons */
+        .btn-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: var(--gradient);
+            color: white;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Results section */
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .result-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .result-card h3 {
+            font-size: 1rem;
+            color: #9ca3af;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-card h3 i {
+            color: var(--primary);
+        }
+
+        /* Sentiment display */
+        .sentiment-display {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .sentiment-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .sentiment-label {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .sentiment-score {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .stars {
+            color: #fbbf24;
+            font-size: 1.5rem;
+            margin-top: 10px;
+        }
+
+        /* Emotion bars */
+        .emotion-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .emotion-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .emotion-name {
+            min-width: 120px;
+            font-size: 0.9rem;
+        }
+
+        .emotion-bar-container {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .emotion-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s ease-out;
+        }
+
+        .emotion-percentage {
+            min-width: 50px;
+            text-align: right;
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        /* Intensity meter */
+        .intensity-meter {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .meter-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(
+                var(--primary) var(--intensity, 0%),
+                rgba(255, 255, 255, 0.1) var(--intensity, 0%)
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            position: relative;
+        }
+
+        .meter-inner {
+            width: 120px;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .meter-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .meter-label {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        /* Keywords */
+        .keywords-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .keyword-tag {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .keyword-tag .count {
+            background: rgba(99, 102, 241, 0.5);
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+            font-size: 0.8rem;
+        }
+
+        /* Recommendations */
+        .recommendations-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .recommendation-item {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Spanish emotions */
+        .spanish-emotions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .spanish-emotion-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(236, 72, 153, 0.1);
+            border-radius: 10px;
+        }
+
+        .spanish-emotion-name {
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .spanish-emotion-words {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+
+        /* Examples */
+        .examples {
+            margin-top: 30px;
+        }
+
+        .examples h3 {
+            color: #9ca3af;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .example-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .example-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #d1d5db;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .example-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .logo { font-size: 3rem; }
+            .card { padding: 20px; }
+            .btn { width: 100%; justify-content: center; }
+            .meter-circle { width: 120px; height: 120px; }
+            .meter-inner { width: 95px; height: 95px; }
+            .meter-value { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">🧠</div>
+            <h1>Analizador de Emociones con IA</h1>
+            <p class="subtitle">
+                Sistema inteligente que analiza texto para detectar sentimientos, 
+                emociones y brindarte recomendaciones personalizadas
+            </p>
+        </header>
+
+        <main>
+            <div class="card">
+                <div class="input-section">
+                    <label class="input-label">
+                        <i class="fas fa-pen"></i> Escribe o pega tu texto para analizar
+                    </label>
+                    <textarea 
+                        id="textInput" 
+                        placeholder="Escribe aquí lo que sientes, piensas o cualquier texto que quieras analizar...
+
+Por ejemplo: 'Hoy fue un día increíble, me siento muy feliz y agradecido por todo lo bueno que me ha pasado. ¡La vida es maravillosa!'"
+                    ></textarea>
+                </div>
+
+                <div class="btn-container">
+                    <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeText()">
+                        <i class="fas fa-brain"></i> Analizar con IA
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearText()">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+
+                <div class="examples">
+                    <h3><i class="fas fa-lightbulb"></i> Prueba con estos ejemplos:</h3>
+                    <div class="example-buttons">
+                        <button class="example-btn" onclick="setExample('happy')">😊 Alegría</button>
+                        <button class="example-btn" onclick="setExample('sad')">😢 Tristeza</button>
+                        <button class="example-btn" onclick="setExample('angry')">😠 Enojo</button>
+                        <button class="example-btn" onclick="setExample('fear')">😨 Miedo</button>
+                        <button class="example-btn" onclick="setExample('love')">❤️ Amor</button>
+                        <button class="example-btn" onclick="setExample('mixed')">🎭 Mixto</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>🤖 Analizando con Inteligencia Artificial...</p>
+            </div>
+
+            <div class="results" id="results">
+                <div class="results-grid">
+                    <!-- Sentiment Card -->
+                    <div class="result-card">
+                        <h3><i class="fas fa-heart"></i> Sentimiento General</h3>
+                        <div class="sentiment-display">
+                            <div class="sentiment-icon" id="sentimentIcon">😊</div>
+                            <div class="sentiment-label" id="sentimentLabel">Positivo</div>
+                            <div class="sentiment-score" id="sentimentScore">Confianza: 95%</div>
+                            <div class="stars" id="sentimentStars">★★★★★</div>
+                        </div>
+                    </div>
+
+                    <!-- Stats Card -->
+                    <div class="result-card">
+                        <h3><i class="fas fa-chart-bar"></i> Estadísticas del Texto</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="wordCount">0</div>
+                                <div class="stat-label">Palabras</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="charCount">0</div>
+                                <div class="stat-label">Caracteres</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Emotions Card -->
+                    <div class="result-card" style="grid-column: span 2;">
+                        <h3><i class="fas fa-theater-masks"></i> Emociones Detectadas</h3>
+                        <div class="emotion-bars" id="emotionBars">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Intensity Card -->
+                    <div class="result-card">
+                        <h3><i class="fas fa-bolt"></i> Intensidad Emocional</h3>
+                        <div class="intensity-meter">
+                            <div class="meter-circle" id="intensityMeter">
+                                <div class="meter-inner">
+                                    <div class="meter-value" id="intensityValue">0%</div>
+                                    <div class="meter-label" id="intensityLabel">Nivel</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Spanish Emotions Card -->
+                    <div class="result-card">
+                        <h3><i class="fas fa-language"></i> Análisis en Español</h3>
+                        <div class="spanish-emotions" id="spanishEmotions">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Keywords Card -->
+                    <div class="result-card">
+                        <h3><i class="fas fa-tags"></i> Palabras Clave</h3>
+                        <div class="keywords-cloud" id="keywordsCloud">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Recommendations Card -->
+                    <div class="result-card">
+                        <h3><i class="fas fa-lightbulb"></i> Recomendaciones IA</h3>
+                        <div class="recommendations-list" id="recommendations">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>
+                🧠 Desarrollado con <i class="fas fa-heart" style="color: #ef4444;"></i> usando 
+                Inteligencia Artificial | Python + Flask + Transformers
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        const examples = {
+            happy: "¡Hoy fue el mejor día de mi vida! Me siento increíblemente feliz y agradecido. Todo salió perfecto, mis amigos me sorprendieron con una fiesta maravillosa. ¡Estoy lleno de alegría y energía positiva!",
+            sad: "Me siento muy triste y solo. Extraño mucho a mi familia y los momentos que pasamos juntos. A veces el dolor es tan grande que no sé cómo seguir adelante. La melancolía me invade.",
+            angry: "¡Estoy FURIOSO! No puedo creer la injusticia que acabo de presenciar. Me siento indignado y frustrado. ¿Cómo es posible que esto siga pasando? ¡Es completamente inaceptable!",
+            fear: "Estoy muy asustado y preocupado por el futuro. No sé qué va a pasar y eso me genera mucha ansiedad. Tengo miedo de fracasar y de decepcionar a todos. Los nervios me consumen.",
+            love: "Te amo con todo mi corazón. Cada día que paso a tu lado es un regalo. Mi amor por ti crece más y más. Eres la persona más maravillosa que he conocido y me haces inmensamente feliz.",
+            mixed: "Hoy tuve un día muy confuso. Por un lado estoy feliz por mi ascenso en el trabajo, pero también triste porque mi mejor amigo se muda a otra ciudad. Siento alegría y melancolía al mismo tiempo."
+        };
+
+        const emotionColors = {
+            'joy': '#10b981',
+            'sadness': '#3b82f6',
+            'anger': '#ef4444',
+            'fear': '#8b5cf6',
+            'surprise': '#f59e0b',
+            'disgust': '#84cc16',
+            'neutral': '#6b7280'
+        };
+
+        const emotionIcons = {
+            'Positivo': '😊',
+            'Negativo': '😔',
+            'Neutral': '😐'
+        };
+
+        function setExample(type) {
+            document.getElementById('textInput').value = examples[type];
+        }
+
+        function clearText() {
+            document.getElementById('textInput').value = '';
+            document.getElementById('results').classList.remove('active');
+        }
+
+        async function analyzeText() {
+            const text = document.getElementById('textInput').value.trim();
+            
+            if (!text) {
+                alert('Por favor, ingresa un texto para analizar');
+                return;
+            }
+
+            const btn = document.getElementById('analyzeBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+
+            btn.disabled = true;
+            loading.classList.add('active');
+            results.classList.remove('active');
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                displayResults(data);
+            } catch (error) {
+                alert('Error al conectar con el servidor: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        function displayResults(data) {
+            const results = document.getElementById('results');
+            
+            // Sentiment
+            const sentimentIcon = document.getElementById('sentimentIcon');
+            const sentimentLabel = document.getElementById('sentimentLabel');
+            const sentimentScore = document.getElementById('sentimentScore');
+            const sentimentStars = document.getElementById('sentimentStars');
+
+            sentimentIcon.textContent = emotionIcons[data.sentiment.label] || '😐';
+            sentimentLabel.textContent = data.sentiment.label;
+            sentimentLabel.style.color = data.sentiment.color;
+            sentimentScore.textContent = `Confianza: ${(data.sentiment.score * 100).toFixed(1)}%`;
+            sentimentStars.textContent = '★'.repeat(data.sentiment.stars) + '☆'.repeat(5 - data.sentiment.stars);
+
+            // Stats
+            document.getElementById('wordCount').textContent = data.word_count;
+            document.getElementById('charCount').textContent = data.char_count;
+
+            // Emotions
+            const emotionBars = document.getElementById('emotionBars');
+            emotionBars.innerHTML = data.emotions.slice(0, 6).map(emotion => `
+                <div class="emotion-item">
+                    <span class="emotion-name">${emotion.emotion_es}</span>
+                    <div class="emotion-bar-container">
+                        <div class="emotion-bar" style="width: ${emotion.score}%; background: ${emotionColors[emotion.emotion] || '#6366f1'}"></div>
+                    </div>
+                    <span class="emotion-percentage">${emotion.percentage}</span>
+                </div>
+            `).join('');
+
+            // Intensity
+            const intensityMeter = document.getElementById('intensityMeter');
+            const intensityValue = document.getElementById('intensityValue');
+            const intensityLabel = document.getElementById('intensityLabel');
+
+            intensityMeter.style.setProperty('--intensity', `${data.intensity.score}%`);
+            intensityMeter.style.background = `conic-gradient(${data.intensity.color} ${data.intensity.score}%, rgba(255,255,255,0.1) ${data.intensity.score}%)`;
+            intensityValue.textContent = `${data.intensity.score}%`;
+            intensityLabel.textContent = data.intensity.level;
+            intensityLabel.style.color = data.intensity.color;
+
+            // Spanish Emotions
+            const spanishEmotions = document.getElementById('spanishEmotions');
+            const spanishEmotionsData = Object.entries(data.spanish_emotions);
+            
+            if (spanishEmotionsData.length > 0) {
+                spanishEmotions.innerHTML = spanishEmotionsData.map(([emotion, info]) => `
+                    <div class="spanish-emotion-item">
+                        <span class="spanish-emotion-name">${emotion}</span>
+                        <span class="spanish-emotion-words">${info.words_found.join(', ')}</span>
+                    </div>
+                `).join('');
+            } else {
+                spanishEmotions.innerHTML = '<p style="color: #9ca3af;">No se detectaron palabras emocionales específicas en español</p>';
+            }
+
+            // Keywords
+            const keywordsCloud = document.getElementById('keywordsCloud');
+            keywordsCloud.innerHTML = data.keywords.slice(0, 8).map(([word, count]) => `
+                <span class="keyword-tag">${word}<span class="count">${count}</span></span>
+            `).join('');
+
+            if (data.keywords.length === 0) {
+                keywordsCloud.innerHTML = '<p style="color: #9ca3af;">No se encontraron palabras clave significativas</p>';
+            }
+
+            // Recommendations
+            const recommendations = document.getElementById('recommendations');
+            recommendations.innerHTML = data.recommendations.map(rec => `
+                <div class="recommendation-item">${rec}</div>
+            `).join('');
+
+            results.classList.add('active');
+        }
+
+        // Enter key support
+        document.getElementById('textInput').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                analyzeText();
+            }
+        });
+    </script>
+</body>
+</html>
